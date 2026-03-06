@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs-extra');
 
@@ -6,11 +6,8 @@ const fs = require('fs-extra');
 app.commandLine.appendSwitch('no-sandbox');
 app.commandLine.appendSwitch('disable-setuid-sandbox');
 
-const SETTINGS_PATH = path.join(app.getPath('userData'), 'settings.json');
-
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'media', privileges: { bypassCSP: true, stream: true } }
-]);
+// Persistence file located in the project root
+const SETTINGS_PATH = path.join(process.cwd(), 'settings.json');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -19,17 +16,16 @@ function createWindow() {
     title: "Move Files",
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true
+      contextIsolation: true,
+      // Disabling webSecurity allows the native file:// protocol to work, 
+      // which is required for smooth video seeking/scrubbing.
+      webSecurity: false 
     }
   });
   win.loadFile('index.html');
 }
 
 app.whenReady().then(() => {
-  protocol.handle('media', (request) => {
-    const filePath = decodeURIComponent(request.url.slice('media://'.length));
-    return net.fetch('file://' + filePath);
-  });
   createWindow();
 });
 
@@ -38,7 +34,7 @@ ipcMain.handle('get-files', async (event, dir) => {
   try {
     const files = await fs.readdir(dir);
     return files
-      .filter(f => /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov)$/i.test(f))
+      .filter(f => /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|mkv)$/i.test(f))
       .map(f => path.join(dir, f));
   } catch (e) { return []; }
 });
@@ -63,12 +59,16 @@ ipcMain.handle('move-file', async (event, { oldPath, newDir }) => {
 });
 
 ipcMain.handle('save-settings', async (event, settings) => {
-  await fs.writeJson(SETTINGS_PATH, settings);
+  await fs.writeJson(SETTINGS_PATH, settings, { spaces: 2 });
 });
 
 ipcMain.handle('load-settings', async () => {
-  if (await fs.pathExists(SETTINGS_PATH)) {
-    return await fs.readJson(SETTINGS_PATH);
+  try {
+    if (await fs.pathExists(SETTINGS_PATH)) {
+      return await fs.readJson(SETTINGS_PATH);
+    }
+  } catch (err) {
+    console.error("Error reading settings.json", err);
   }
   return null;
 });

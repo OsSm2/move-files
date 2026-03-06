@@ -4,11 +4,17 @@
     <title>Move Files</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; background: #121212; color: #e0e0e0; overflow: hidden; }
-        #toolbar { padding: 10px 15px; background: #1f1f1f; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #333; height: 50px; }
+        #toolbar { padding: 10px 15px; background: #1f1f1f; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #333; height: 50px; flex-shrink: 0; }
         #app-body { display: flex; flex: 1; overflow: hidden; }
-        #main-viewer { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #000; }
-        #viewer { max-width: 100%; max-height: 100%; object-fit: contain; }
-        #sidebar { width: 300px; background: #181818; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 15px; }
+        
+        /* Fixed clipping: ensure the main viewer allows the child to shrink and fit */
+        #main-viewer { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: #000; overflow: hidden; position: relative; }
+        #mediaContainer { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        
+        /* Object-fit contain ensures the whole image is visible without distortion or clipping */
+        #viewer { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+        
+        #sidebar { width: 300px; background: #181818; border-left: 1px solid #333; display: flex; flex-direction: column; padding: 15px; flex-shrink: 0; }
         .dest-item { display: flex; align-items: center; background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; padding: 8px 10px; cursor: pointer; border: 1px solid transparent; }
         .dest-item:hover { background: #333; border-color: #444; }
         .shortcut-key { font-weight: bold; color: #0078d4; margin-right: 10px; font-family: monospace; background: #000; padding: 2px 6px; border-radius: 3px; }
@@ -20,6 +26,10 @@
         #btnUndo { background: #6c757d; }
         #btnUndo:disabled { opacity: 0.3; }
         #stats { font-size: 0.8em; color: #888; margin-top: auto; padding-top: 10px; border-top: 1px solid #333; }
+        
+        #footer { height: 28px; background: #004a83; color: white; display: flex; align-items: center; padding: 0 15px; font-size: 0.85em; flex-shrink: 0; }
+        .status-item { margin-right: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #current-filename { font-weight: bold; color: #fff; }
     </style>
 </head>
 <body>
@@ -36,6 +46,11 @@
             <button id="btnAddDest" style="background: #2b8041; margin-top: 10px;">+ Add Folders</button>
             <div id="stats">Ready</div>
         </div>
+    </div>
+    <div id="footer">
+        <span class="status-item" id="remaining-count">Files remaining: 0</span>
+        <span class="status-item">File: <span id="current-filename">-</span></span>
+        <span class="status-item" id="source-path-display" style="opacity: 0.7; margin-left: auto;">No source selected</span>
     </div>
     <script src="renderer.js"></script>
 </body>
